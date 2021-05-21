@@ -1,0 +1,27 @@
+Language: Game Maker Language - '//' = comments
+// This code would execute Server based packets received from Clients
+
+
+buffer = argument0;
+socket = argument1;
+msgid = buffer_read(buffer,buffer_id);
+
+switch(msgid)
+{
+case player_character:
+break;
+
+case player_move:
+
+var xx = buffer_read(buffer,buffer_u16);
+var yy = buffer_read(buffer,buffer_u16);
+
+buffer_seek(server_buffer,buffer_seek_start,0);
+buffer_write(server_buffer,buffer_u8,player_move);
+buffer_write(server_buffer,buffer_u8,sock);
+buffer_write(server_buffer,buffer_u16,xx);
+buffer_write(server_buffer,buffer_u16,yy);
+network_send_packet(socket,server_buffer,buffer_tell(server_buffer));
+break;
+
+}
