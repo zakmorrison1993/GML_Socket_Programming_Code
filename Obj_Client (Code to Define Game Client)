@@ -1,0 +1,40 @@
+Language: Game MAker Language - '//' = comments
+
+//Create Event
+client = network_create_socket(network_socket_tcp);
+connect = network_connect(client,global.ip,8000);
+
+if connect < 0 {show_error("could not connect",0) room_goto(menu_room);}
+
+connected = 1;
+
+client_buffer = buffer_create(1024,buffer_fixed,1);
+
+players = ds_map_create();
+
+player_count = 0;
+
+
+//Destroy Event
+network_destroy(client);
+ds_map_destroy(players);
+
+
+//Step Eevent
+if connected <= 0 {room_goto(menu_room);}
+
+??Async Event
+type_event = ds_map_find_value(async_load,"type");
+
+switch(type_event)
+{
+case network_type_data:
+buffer = ds_map_find_value(async_load,"buffer");
+buffer_seek(buffer,buffer_seek_start,0);
+received_packet_client(buffer);
+break;
+
+case network_type_disconnect:
+connected = 0;
+}
+
