@@ -1,5 +1,6 @@
 Language: Game Maker Language - '//' = comments
 // This code would execute Server based packets received from Clients
+// The game was never finished, however the basis for packet transmission is here just full list of actions is not complete
 
 
 buffer = argument0;
