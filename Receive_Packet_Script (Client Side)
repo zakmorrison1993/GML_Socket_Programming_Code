@@ -1,0 +1,40 @@
+Language: Game Maker Lanaguage - '//' = comments
+// This code would execute Client based packets received from Server
+// The game was never finished, however the basis for packet transmission is here just full list of actions is not complete
+
+
+buffer = argument0;
+msgid = buffer_read(buffer,buffer_u8);
+
+switch(msgid)
+{
+case 1: //player connect
+var socket = buffer_read(buffer,buffer_u8);
+var client_id = buffer_read(buffer,buffer_u8);
+ds_map_add(players,client_id,string(socket));
+break;
+
+case 2: //player joined
+var socket = buffer_read(buffer,buffer_u8);
+var new_player_socket = buffer_read(buffer,buffer_u8);
+player_count ++;
+ds_map_add(players,player_count,new_player_socket);
+break;
+
+case 3: //player existing
+var socket = buffer_read(buffer,buffer_u8);
+var old_player_socket = buffer_read(buffer,buffer_u8);
+player_count ++;
+ds_map_add(players,player_count,old_player_socket);
+break;
+
+case 4: //player disconnect
+var socket = buffer_read(buffer,buffer_u8);
+var disconnected = buffer_read(buffer,buffer_u8);
+ds_map_delete(players,disconnected);
+player_count --;
+break;
+
+
+
+} 
