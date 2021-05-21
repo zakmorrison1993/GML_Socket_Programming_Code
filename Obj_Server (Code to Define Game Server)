@@ -1,0 +1,115 @@
+Language Game Maker Language - '//' = comments
+
+// Create Event
+port = 8000; // Temp Port Number
+max_clients = 8; // Client Limiter
+
+network_create_server(network_socket_tcp,port,max_clients); // Initiate Server
+
+server_buffer = buffer_create(1024,buffer_fixed,1); // Buffer for Data
+
+list = ds_list_create(); // List of Sockets
+
+players = ds_map_create(); //List of Player References to Sockets
+
+player_count = 0; // No. of Active Players/ Connections
+
+player_connect = 0; // Trigger for Connecting Players
+player_joined = 0; // Trigger for Joined Players
+player_disconnect = 0; // Trigger for Disconnecting Players
+
+
+// Network Async Event
+type_event = ds_map_find_value(async_load,"type"); // Async Connection Instructions
+switch(type_event) // Server Event Switch Statement
+{
+case network_type_connect: // Case Connection Established
+//collect socket
+
+var socket = ds_map_find_value(async_load,"socket"); // Add Socket
+ds_list_add(list,"socket"); // Add to External Socket Reference
+
+//create client inference
+player_instance = instance_create(x,y,obj_server_client); // Create Client Object Reference in-game
+player_instance.socket_id = socket; // Assign Socket ID
+player_instance.client_id = player_count++; // Increase Client Object Server Count
+
+//add to map
+players[? string(socket)] = player_instance; // Add Active Player/Connection to Player Reference
+
+//find client from map
+var current_client_id = players[? string(socket)].client_id; // Find Speific Player in Reference
+
+//send socket basic data
+buffer_seek(server_buffer,buffer_seek_start,0); // Reset Buffer
+buffer_write(server_buffer,buffer_u8,1); // Write Client Response Case to Buffer
+buffer_write(server_buffer,buffer_u8,socket); // Write Client Socket ID to Buffer
+buffer_write(server_buffer,buffer_u8,current_client_id); // Write Current Client Reference to Buffer
+network_send_packet(socket,server_buffer,buffer_tell(server_buffer)); // Send Buffer over TCP
+
+
+
+//tell other clients that a player has joined
+with(obj_server_client) // With in-game Client Object
+{
+if client_id != current_client_id // if in-game Client Object referes back to the other Players/Connections
+{
+buffer_seek(obj_server.server_buffer,buffer_seek_start,0); // Reset Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,2); // Write Client Response Case to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,socket_id); // Write Client Socket ID to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,current_client_id); // Write Current Client Reference to Buffer
+network_send_packet(socket_id,obj_server.server_buffer,buffer_tell(obj_server.server_buffer)); // Send Buffer over TCP
+}
+}
+
+//tell new clients that other players exist
+with(obj_server_client)  // With in-game Client Object
+{
+if client_id = current_client_id // if in-game Client Object referes back to the current Players/Connections
+{
+var i = 0 // variable 'i' = nothing
+for(i = 0; i < ds_map_size(obj_server.players) i ++) // for variable 'i' is less than the number of active players/connections, increase by one
+{
+var notme = instance_find(obj_server_client,i) // reference to other players/connections
+
+buffer_seek(obj_server.server_buffer,buffer_seek_start,0); // reset buffer
+buffer_write(obj_server.server_buffer,buffer_u8,3);  // Write Client Response Case to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,socket_id); // Write Client Socket ID to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,notme.client_id); // Write Other Client ID to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,notme.socket_id); // Write Other Client Socket ID to Buffer
+network_send_packet(socket_id,obj_server.server_buffer,buffer_tell(obj_server.server_buffer)); // Send Buffer Over TCP
+
+}
+}
+}
+
+break;
+
+case network_type_disconnect: // Case Connection Disconnected
+var socket = ds_map_find_value(async_load,"socket"); // Finding Disconnected Player Socket
+var current_client_id = players[? string(socket)]; // Finding Disconnected Player ID
+
+with(obj_server_client) // with in-game Client Objects
+{
+if client_id != current_client_id // if the Current Client ID is not the same as selected Client ID
+{
+buffer_seek(obj_server.server_buffer,buffer_seek_start,0); // Reset Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,4); // Write Client Response Case to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,socket_id);// Write Client Socket to Buffer
+buffer_write(obj_server.server_buffer,buffer_u8,current_client_id);// Write Client ID to Buffer
+network_send_packet(socket_id,obj_server.server_buffer,buffer_tell(obj_server.server_buffer)); // Send Buffer over TCP
+}
+}
+with(players[? string(socket)]) // With Disconnected Player's Socket in Player Reference 
+{instance_destroy()} // Delete Object
+ds_map_delete(players,string(socket)); // Remove from Player Reference
+player_count --; // Reduce Player Count
+
+break;
+
+case network_type_data: // Case Data Transfer
+buffer = ds_map_find_value(async_load,"buffer"); // Find Buffer Reference 
+var socket = ds_map_find_value(async_load,"id"); // Find Socket
+received_packet_server(buffer,socket); // External Script 
+
+}
