@@ -23,7 +23,7 @@ ds_map_destroy(players);
 //Step Eevent
 if connected <= 0 {room_goto(menu_room);}
 
-??Async Event
+//Async Event
 type_event = ds_map_find_value(async_load,"type");
 
 switch(type_event)
